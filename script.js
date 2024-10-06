@@ -7,13 +7,17 @@ const newTransactionText = document.getElementById("text");
 const newTransactionAmount = document.getElementById("amount");
 const submitBtn = document.querySelector(".btn");
 
-let transactions = [];
+const LocalStorageTransactions = JSON.parse(
+  localStorage.getItem("transactions")
+);
+let transactions =
+  localStorage.getItem("transactions") !== null ? LocalStorageTransactions : [];
 
 function addTransactions(e) {
   e.preventDefault();
   if (
     newTransactionText.value.trim() === "" ||
-    newTransactionAmount.value.trim() === 0 ||
+    newTransactionAmount.value.trim() === "" ||
     isNaN(newTransactionAmount.value)
   ) {
     alert("Please add a text and amount");
@@ -21,11 +25,13 @@ function addTransactions(e) {
     const transaction = {
       id: uniqueId(),
       text: newTransactionText.value,
-      amount: +newTransactionAmount.value,
+      amount: parseFloat(newTransactionAmount.value),
     };
     transactions.push(transaction);
     renderTransactions(transactions);
+
     updateTotalResults(transactions);
+    updateLocalStorage();
     newTransactionText.value = "";
     newTransactionAmount.value = "";
   }
@@ -44,26 +50,33 @@ function renderTransactions(transactions) {
     const { id, text, amount } = transaction;
     const sign = amount < 0 ? "-" : "+";
     const history = `  <li class="${amount > 0 ? "plus" : "minus"}">
-  ${text} <span>${sign} ${Math.abs(amount)}</span><button    
-   type = "button" class="delete-btn" data-id="${id}">x</button>
+  ${text} 
+        <span>${sign} ${Math.abs(amount)}</span>
+  <button    
+        type = "button" 
+        class="delete-btn" 
+        data-id="${id}">x</button>
 </li>`;
     historyList.innerHTML += history;
   });
-
-  historyList.addEventListener("click", (e) => {
-    if (e.target.classList.contains("delete-btn")) {
-      const id = e.target.getAttribute("data-id");
-      deleteTransaction(id);
-    }
-  });
 }
+historyList.addEventListener("click", (e) => {
+  if (e.target.classList.contains("delete-btn")) {
+    const id = e.target.getAttribute("data-id");
+    deleteTransaction(id);
+  }
+});
 function deleteTransaction(id) {
-  transactions = transactions.filter((el) => el.id !== id);
+  const transactionId = Number(id);
+  transactions = transactions.filter(
+    (transaction) => transaction.id !== transactionId
+  );
+  updateLocalStorage();
   renderTransactions(transactions);
   updateTotalResults(transactions);
 }
-// deletBtn.addEventListener("click", deleteTransaction);
-function updateTotalResults() {
+
+function updateTotalResults(transactions) {
   const amounts = transactions.map((transaction) => transaction.amount);
   console.log(amounts);
   const total = amounts.reduce((acc, cur) => (acc += cur), 0).toFixed(2);
@@ -79,3 +92,13 @@ function updateTotalResults() {
   moneyPlusAmount.innerHTML = `$${income}`;
   moneyMinusAmount.innerHTML = `$${expense}`;
 }
+
+function updateLocalStorage() {
+  localStorage.setItem("transactions", JSON.stringify(transactions));
+}
+
+function init() {
+  renderTransactions(transactions);
+  updateTotalResults(transactions);
+}
+init();
